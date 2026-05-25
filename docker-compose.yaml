@@ -6,6 +6,6 @@ services:
     image: latex-docker:u24
     container_name: latex_workspace
     volumes:
-      - ./template:/workspace
+      - ~/Latex/klatex:/workspace
     tty: true
     stdin_open: true
