@@ -1,0 +1,294 @@
+%% miextras.sty — 现代化排版与宏定义（需 XeLaTeX / LuaLaTeX）
+%% ----------------------------------------------------------------
+%% 适配要求：页眉页脚保持原样、TOC保持原样、默认字体保持原样
+%% 新增特性：定理标题独占一行，严格细分的左侧彩带专属配色
+%% ----------------------------------------------------------------
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{miextras}[2026/04/09 Modern Book Style]
+
+% ============================================================
+%  1) 引擎检查
+% ============================================================
+\RequirePackage{iftex}
+\RequirePackage{everypage}
+\ifPDFTeX
+  \PackageError{miextras}{Please compile with XeLaTeX or LuaLaTeX}{This package relies on fontspec and CJK font support.}
+\fi
+
+% ============================================================
+%  2) 核心宏包与页面、字体设置 (保持原样)
+% ============================================================
+\RequirePackage{ctex}
+\RequirePackage{fontspec}
+\RequirePackage{geometry}
+\RequirePackage{xcolor}
+\RequirePackage{hyperref}
+\RequirePackage{titlesec}
+\RequirePackage{fancyhdr}
+\RequirePackage{tikz}
+\RequirePackage{eso-pic}
+\RequirePackage[most]{tcolorbox}
+\RequirePackage{enumitem}
+\RequirePackage{mathtools}
+\RequirePackage{amsmath,amssymb,bm,amsthm}
+\usetikzlibrary{calc,positioning}
+
+\geometry{paperwidth=6in, paperheight=9in, margin=0.8in}
+
+% 恢复原版字体设置
+\setmainfont{Times New Roman}
+\IfFontExistsTF{Noto Serif CJK SC}{\setCJKmainfont{Noto Serif CJK SC}}{\setCJKmainfont{FandolSong}}
+
+\linespread{1.35}
+\pagecolor{white}
+\color{black}
+
+% ============================================================
+%  3) 统一调色板 (Palette)
+% ============================================================
+% 主题色
+\definecolor{brand}{HTML}{1A9D8F}      % 品牌主色（绿松石）
+\definecolor{brandD}{HTML}{2A7F6F}     % 品牌深色
+\definecolor{ink}{HTML}{1A1A1A}        % 正文文本
+\definecolor{keybg}{HTML}{E8F4F1}      % 轻背景
+\definecolor{keydark}{HTML}{2F5E58}    % 深色标题
+\definecolor{accent}{HTML}{FF6B6B}     % 强调（红）
+\definecolor{accentD}{HTML}{D94F4F}    % 强调深色
+\definecolor{soft}{HTML}{F3F8F7}       % 柔色背景
+
+% 盒子与定理专属色 (针对本次需求新增)
+\definecolor{thmblue}{HTML}{3498DB}    % 优雅的浅蓝色 (定理、推论、命题)
+\definecolor{lempurple}{HTML}{9B59B6}  % 浅紫色 (引理)
+\definecolor{remred}{HTML}{E74C3C}     % 浅红色 (注释)
+\definecolor{defgreen}{HTML}{1A9D8F}   % 品牌绿 (定义)
+\definecolor{plum}{HTML}{6C5CE7}       % 紫系 (Example)
+
+\hypersetup{
+  colorlinks=true, linkcolor=brandD, citecolor=brandD, urlcolor=thmblue
+}
+
+% ============================================================
+%  4) 全局宏定义 & 日期宏
+% ============================================================
+\newcommand{\padzero}[1]{\ifnum#1<10 0\fi\number#1}
+\newcommand{\BrandYMD}{{\the\year·\padzero{\the\month}·\padzero{\the\day}}}
+
+\newcommand{\dd}{\,\mathrm{d}}  % 定义直立的d
+\newcommand{\tran}{^{\top}} % 转置
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\D}{\mathbb{D}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\diag}{diag}
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}
+\DeclarePairedDelimiter{\ip}{\langle}{\rangle}
+\numberwithin{equation}{chapter}
+
+% ==== 语义高亮 ====
+\newcommand{\hltext}[2][yellow!30]{%
+  \tikz[baseline=(X.base)] \node[rectangle, rounded corners=2pt, fill=#1, inner sep=2pt, anchor=base] (X) {#2};%
+}
+\newcommand{\KeyIdea}[1]{\hltext[keybg]{\textbf{#1}}}
+\newcommand{\Term}[1]{\textcolor{brandD}{\textbf{#1}}}
+\newcommand{\Emph}[1]{\textcolor{accentD}{\textbf{#1}}}
+\definecolor{error}{HTML}{E53935}
+\newcommand{\Confuse}[1]{\hltext[error!20]{\textcolor{error}{#1}}}
+
+% ============================================================
+%  5) 左侧彩带 (保持原样)
+% ============================================================
+\newcommand{\LeftBandA}{0.12in}
+\newcommand{\LeftBandB}{0.28in}
+\newcommand{\PutLeftBands}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \fill[keydark] ([xshift=0cm]current page.north west) rectangle ([xshift=\LeftBandA]current page.south west);
+    \fill[keybg]   ([xshift=\LeftBandA]current page.north west) rectangle ([xshift=\LeftBandB]current page.south west);
+  \end{tikzpicture}%
+}
+\makeatletter
+\@ifundefined{AddEverypageHook}{
+  \AddToShipoutPictureBG*{\PutLeftBands}
+}{
+  \AddEverypageHook{\PutLeftBands}
+}
+\makeatother
+
+% ============================================================
+%  6) 页眉页脚与 TOC (完全恢复原版不修改)
+% ============================================================
+\newcommand{\seriesnum}{I}
+\newcommand{\BookShortTitle}{RTK/INS组合导航原理}
+\newcommand{\BookFooterLabel}{@ZiKun}
+\setlength{\headheight}{14pt}
+
+\pagestyle{fancy}
+\fancyhf{} % 清空默认
+\renewcommand{\headrulewidth}{0.4pt} % 页眉横线
+\fancyhead[LE]{\nouppercase{\leftmark}}  % 偶数页左：章标题
+\fancyhead[RO]{\nouppercase{\rightmark}} % 奇数页右：节标题
+\fancyfoot[LE,RO]{\textcolor{brand}{\thepage}}
+\fancyfoot[LO,RE]{\textcolor{brand}{\BookFooterLabel｜\BookShortTitle \seriesnum}}
+
+\fancypagestyle{coverstyle}{
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0.4pt}
+  \fancyhead[LE]{\nouppercase{\leftmark}}
+  \fancyhead[RO]{\nouppercase{\rightmark}}
+  \fancyfoot[LE,RO]{\textcolor{brand}{\thepage}}
+  \fancyfoot[LO,RE]{\textcolor{brand}{\BookFooterLabel｜\BookShortTitle \seriesnum}}
+}
+
+\makeatletter
+\newcommand{\TOCwithoutHeadFoot}{%
+  \begingroup
+    \let\saved@thispagestyle\thispagestyle
+    \def\thispagestyle##1{\saved@thispagestyle{empty}}% 忽略参数，强制 empty
+    \pagestyle{empty}% 目录跨页也无眉脚
+    \tableofcontents
+    % \clearpage
+  \endgroup
+  \pagestyle{fancy}% 恢复正文页眉页脚
+}
+\makeatother
+
+% ============================================================
+%  7) 标题格式 (保持优雅间距)
+% ============================================================
+\titleformat{\part}[display]
+  {\filcenter\bfseries\color{keydark}}
+  {\Large Part \thepart}{0.6em}{\Huge}
+  [\vspace{0.8em}{\color{brand}\rule{7cm}{1.2pt}}]
+\titlespacing*{\part}{0pt}{\fill}{\fill}
+
+\titleformat{\chapter}[display]
+  {\bfseries\color{keydark}}
+  {\Large 第\thechapter 章}{0.4em}{\Huge}
+  [\vspace{0.4em}{\color{brandD!45}\rule{6cm}{0.8pt}}]
+\titlespacing*{\chapter}{0pt}{1.2em}{0.8em}
+
+\titleformat{\section}{\Large\bfseries\color{keydark}}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{0.9em}{0.5em}
+\titleformat{\subsection}{\large\bfseries\color{brand}}{\thesubsection}{0.6em}{}
+\titlespacing*{\subsection}{0pt}{0.8em}{0.4em}
+
+% ============================================================
+%  8) 核心 Box 系统 (皮肤定义，修复间距版)
+% ============================================================
+\tcbset{
+  % 样式 A：白底框线 (用于 KeyIdea, Example)
+  mi-elegant/.style={
+    enhanced, breakable, colback=white, colframe=#1, boxrule=0.9pt, arc=3pt,
+    left=10pt, right=10pt, top=10pt, bottom=10pt,
+    % 使用弹性间距，而不是僵硬的 12pt
+    before skip=\medskipamount, after skip=\medskipamount,
+    borderline west={3pt}{0pt}{#1}
+  },
+  % 样式 B：左侧彩条+极浅背景，无边框 (用于 定理, 定义, 引理等)
+  mi-notion/.style={
+    enhanced, breakable, frame hidden, colback=#1!8, 
+    borderline west={3pt}{0pt}{#1},
+    left=10pt, right=10pt, top=10pt, bottom=10pt,
+    % 使用弹性间距
+    before skip=\medskipamount, after skip=\medskipamount, arc=2pt
+  }
+}
+
+% --- 自定义区块 (使用 mi-elegant 白底) ---
+\newtcolorbox{KeyBox}{
+  mi-elegant=brandD,
+  title=\textbf{\color{white}Key Idea},
+  colbacktitle=brandD, coltitle=white, fonttitle=\bfseries\large
+}
+
+\newtcolorbox{Example}[1][]{
+  mi-elegant=plum,
+  title=\textbf{\color{white}Example},
+  colbacktitle=plum, coltitle=white, fonttitle=\bfseries, #1
+}
+
+% 兼容旧正文中的提示类区块。
+\newtcolorbox{Takeaway}{
+  mi-notion=accentD,
+  title=\textbf{Takeaway},
+  fonttitle=\bfseries,
+  coltitle=accentD
+}
+
+\newtcolorbox{SideBar}{
+  mi-notion=brand,
+  title=\textbf{Sidebar},
+  fonttitle=\bfseries,
+  coltitle=brandD
+}
+
+% ============================================================
+%  9) 定理系统与装裱 (回归原生机制，完美换行，无乱白)
+% ============================================================
+% 1. 定义完美的 amsthm 样式：标题加粗正体，独占一行，内容正体
+\newtheoremstyle{miBoxStyle}
+  {0pt}{0pt}       % 上下间距让给 tcolorbox 去处理
+  {\normalfont}    % 确保内容是正体 (非斜体)
+  {}               % 缩进
+  {\bfseries}      % 标题字体粗体
+  {}               % 标题后的标点符号 (留空)
+  {\newline}       % 强制标题独占一行
+  {}               % 定理头部格式 (默认)
+
+% 2. 应用样式并定义你的所有环境
+\theoremstyle{miBoxStyle}
+\newtheorem{theorem}{定理}[chapter]
+\newtheorem{lemma}[theorem]{引理}
+\newtheorem{proposition}[theorem]{命题}
+\newtheorem{corollary}[theorem]{推论}
+\newtheorem{definition}[theorem]{定义}
+\newtheorem{remark}[theorem]{注}
+
+% 3. 给这些原生环境穿上不同颜色的 tcolorbox "外衣"
+\tcolorboxenvironment{theorem}{mi-notion=thmblue}     
+\tcolorboxenvironment{corollary}{mi-notion=thmblue}   
+\tcolorboxenvironment{proposition}{mi-notion=thmblue} 
+\tcolorboxenvironment{lemma}{mi-notion=lempurple}     
+\tcolorboxenvironment{remark}{mi-notion=remred}       
+\tcolorboxenvironment{definition}{mi-notion=defgreen} 
+
+% 证明环境 (保留原样式，纯文本无盒子)
+\renewenvironment{proof}[1][证明]{\par
+  \pushQED{\qed}%
+  \normalfont \topsep6pt \partopsep0pt \trivlist
+  \item[\hskip\labelsep\bfseries #1.]\ignorespaces
+}{\popQED\endtrivlist}
+
+% ============================================================
+%  10) 封面与排版辅助
+% ============================================================
+\newcommand{\MakeBookCoverUltraSimple}[3]{%
+  \thispagestyle{coverstyle}\vspace*{\fill}
+  \begin{center}
+    {\bfseries\fontsize{30}{36}\selectfont\color{keydark} #1\par}\vspace{0.45em}
+    {\bfseries\fontsize{16}{22}\selectfont\color{ink!90} #2\par}\vspace{0.6em}
+    \if\relax\detokenize{#3}\relax\else\vspace{0.2em}{\color{brandD}\fboxsep=6pt\colorbox{white}{\textbf{\textcolor{brandD}{#3}}}\par}\fi
+    \vspace{0.8em}{\small\color{keydark!75}\BrandYMD}
+  \end{center}
+  \vspace*{\fill}\clearpage
+}
+
+\newcommand{\ChapterEpigraph}[2][]{%
+  \par\vspace*{0.6em}
+  \begin{flushright}
+    \begin{minipage}{0.78\linewidth}\raggedleft
+      {\itshape\color{ink!85}#2\par}%
+      \if\relax\detokenize{#1}\relax\else\vspace{0.3em}{\color{ink!70}--- #1}\par\fi
+    \end{minipage}
+  \end{flushright}\vspace{0.6em}
+}
+
+\endinput
+%% ========================= End of miextras.sty =========================
